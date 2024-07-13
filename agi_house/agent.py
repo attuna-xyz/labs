@@ -3,17 +3,21 @@ from discord.ext import commands
 import json
 import aiohttp
 import requests
-from dotenv import load_dotenv
 import os
-# Bot setup
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix='\\', intents=intents)
-# Dictionary to store tags
-tags = {}
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
 load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv('BOT_API_KEY')
 API_KEY = os.getenv('ATTUNA_API_KEY')
+
+# Bot setup
+intents = discord.Intents.default()
+intents.message_content = True
+intents.reactions = True
+bot = commands.Bot(command_prefix='\\', intents=intents)
+# Dictionary to store tags
+tags = {}
 
 def add_tag(sub_tags, tag_description, tag_name):
     url = 'https://us-central1-prompt-learner-ca90f.cloudfunctions.net/attuna_tagging/add_tag'
@@ -58,8 +62,10 @@ async def on_ready():
 async def add_tag_command(ctx, tag_name, tag_description, *sub_tags):
     sub_tags_list = list(sub_tags)
     response = add_tag(sub_tags_list, tag_description, tag_name)
+    embed = discord.Embed(title=f"Tag: {tag_name}", description=tag_description, color=discord.Color.blue())
+    embed.add_field(name="Sub-tags", value=", ".join(sub_tags_list), inline=False)
     thread = await ctx.message.create_thread(name=f"Thread for {ctx.message.content}")
-    await thread.send(f'Tag added: {response}')
+    await thread.send(embed=embed)
 
 @bot.event
 async def on_message(message):
@@ -67,11 +73,17 @@ async def on_message(message):
         return
     
     predicted_tags = predict_tags(message.content)
+    print("Predicted tags: ", predicted_tags)
+    embed = discord.Embed(title="Predicted Tags", description="", color=discord.Color.green())
+    for tag in predicted_tags["predicted_tags"]:
+        tag_name = tag.split(':')[0]
+        subtags = tag.split(':')[1]
+        embed.add_field(name="Tag", value=tag_name, inline=False)
+        embed.add_field(name="Sub-tags", value=subtags, inline=False)
     thread = await message.create_thread(name=f"Thread for {message.content}")
-    await thread.send(f'Predicted tags: {predicted_tags}')
+    await thread.send(embed=embed)
     
     await bot.process_commands(message)
 
 # Run the bot
-# Replace 'YOUR_BOT_TOKEN' with your actual bot token
-bot.run('MTI2MTc3NDU1MzE4OTg0NzA2MQ.GRYbKC.wvk9sBn682tE_mYsCXkGCmJoFPQ65pYKje0gUk')
+bot.run(DISCORD_BOT_TOKEN)
