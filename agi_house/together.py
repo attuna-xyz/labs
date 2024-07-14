@@ -6,26 +6,24 @@ from tools import ActionGenerator
 from prompts import MAIN_AGENT_PROMPT, MESSAGE_TO_AGENT
 # Load environment variables from .env file
 load_dotenv()
-TOGETHER_API_KEY = os.getenv('OPENAI_API_KEY')
 # choose from our 50+ models here: https://docs.together.ai/docs/inference-models
 from langchain_openai import ChatOpenAI
-
+from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_core.prompts import ChatPromptTemplate
 # llm = ChatOpenAI(
 #     base_url="https://api.together.xyz/v1",
 #     api_key=TOGETHER_API_KEY,
 #     model="mistralai/Mixtral-8x7B-Instruct-v0.1",)
+TOGETHER_API_KEY = os.getenv('OPENAI_API_KEY')
+
 llm = ChatOpenAI(
     api_key=TOGETHER_API_KEY,
     model="gpt-4o",)
 
 #llama does not have function calling :(
-from langchain.agents import AgentExecutor, create_tool_calling_agent
-from langchain_core.prompts import ChatPromptTemplate
+
 
 tools = [ActionGenerator()]
-
-# if you don't want to do streaming, you can use the invoke method
-#print(llm.invoke("Tell me fun things to do in NYC").content)
 
 prompt = ChatPromptTemplate.from_messages(
     [
