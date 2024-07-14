@@ -6,11 +6,15 @@ authors = ["Aditya Lahiri <adityalahiri13@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 discord-py = "^2.4.0"
 aiohttp = "^3.9.5"
 requests = "^2.32.3"
 python-dotenv = "^1.0.1"
+langchain-together = "^0.1.4"
+langchain-openai = "^0.1.16"
+langchain = "^0.2.7"
+langchain-core = "^0.2.18"
 
 
 [build-system]
