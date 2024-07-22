@@ -1,0 +1,1424 @@
+[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+CTRL K
+
+CTRL K
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Extract and summarize Hacker News comments
+
+֍
+
+Learn how to extract information (including sentiment analysis) and generate a summary (RAG)
+
+In this guide, we'll show you how to search Hacker News comments for a topic, extract sentiment, and generate a research summary using Substrate.
+
+This concise RAG implementation runs dozens of LLM calls in parallel and streams the markdown result. It's easy to remix the runnable TypeScript code below, [hosted on val.town (opens in a new tab)](https://www.val.town/v/substrate/hackerNewsRAG)
+.
+
+  
+
+First, we search HackerNews comments using the [Algolia HN Search API (opens in a new tab)](https://hn.algolia.com/api)
+.
+
+TypeScript
+
+``   const searchResults = await hnSearch({    query: query,    numericFilters: `created_at_i>${Math.floor(Date.now() / 1000) - 60 * 60 * 24 * 7 * 4}`,    tags: "comment",    });            ``
+
+Next, we use ComputeJSON to extract summary, sentiment, and other metadata from each comment. In TypeScript, we use [zod (opens in a new tab)](https://zod.dev/)
+ and [zod-to-json-schema (opens in a new tab)](https://www.npmjs.com/package/zod-to-json-schema)
+ to create the JSON schema. In Python, we use [Pydantic (opens in a new tab)](https://docs.pydantic.dev/latest/)
+.
+
+TypeScript
+
+Python
+
+``   const commentInfo = z.object({    summary: z    .string()    .describe(    "Summarize in a couple sentences: who is commenting, what the comment is about, how it is related to the topic.",    ),    storyTitle: z.string().describe("The story title."),    forHiring: z    .boolean()    .describe(    "True if the story is a Ask HN post with Who is hiring, Who wants to be hired, or Seeking freelancer in the title",    ),    sentiment: z    .enum(["positive", "neutral", "negative"])    .describe("Sentiment of the post."),    objectID: z.string().describe("objectID field"),    });        let summaries = [];    for (const hit of searchResults.hits) {    summaries.push(    new ComputeJSON({    prompt: `Summarize this comment and how it relates to the topic: ${query}    Use "negative" sentiment for posts about API, abstraction, documentation, tutorial, general quality, slowness, or performance issues.    COMMENT: ${JSON.stringify(hit)}`,    json_schema: zodToJsonSchema(commentInfo),    }),    );    }            ``
+
+Finally, we use ComputeText to generate a markdown summary of all the extracted JSON, and stream the results of the `markdown` node.
+
+TypeScript
+
+Python
+
+``   const markdown = new ComputeText({    prompt: sb.concat(    `Below is a list of summarized comments about ${query} on Hacker News.    Generate concise markdown summarizing the results.    Summarize the contents of the comment and the sentiment about ${query}.    Categorize results under sentiment headers.    Order from most negative to least negative within each category.    Add a link to the original story URL in this format: [<story title>](https://news.ycombinator.com/item?id=<objectID>)    Filter out posts that do not seem to be about ${query}.    RESULTS:\n`,    ...summaries.map((s) => sb.jq(s.future.json_object, "@json")),    ),    model: "Llama3Instruct70B",    });    const stream = await substrate.stream(markdown);            ``
+
+The code we wrote was really simple. Implicitly, we were creating the graph below. But we didn't have to think about the graph at all! With Substrate, by simply relating tasks to each other, we get automatic parallelization of dozens of LLM calls for free, and 0 roundtrips.
+
+`comment`
+
+ComputeJSON
+
+`comment`
+
+ComputeJSON
+
+`comment`
+
+ComputeJSON
+
+ComputeText
+
+`markdown`
+
+Press enter or space to select a node.You can then use the arrow keys to move the node around. Press delete to remove it and escape to cancel.
+
+Press enter or space to select an edge. You can then press delete to remove it or escape to cancel.
+
+[Changelog](/changelog "Changelog")
+[Reimagine a room](/guides/reimagine-a-room "Reimagine a room")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Reimagine a room
+
+֍
+
+Generate variations of a room in different styles and summarize the interior design
+
+In this example, we'll:
+
+*   Use StableDiffusionXLInpaint
+    
+    Edit an image using [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
+    . Supports inpainting (edit part of the image with a mask) and image-to-image (edit the full image).
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLInpaint)
+    
+    StableDiffusionXLInpaint( image\_uri="https://media.substrate.run/docs-klimt-park.jpg", mask\_image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="large tropical colorful bright birds in a jungle, high resolution oil painting", negative\_prompt="dark, cartoon, anime", strength=0.8, num\_images=2, store="hosted", seeds=\[ 1607280, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607326 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    to generate variations of a photo of a room in different styles.
+*   Use StableDiffusionXLControlNet
+    
+    Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+    .
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+    
+    StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    with the `edge` method to generate variations structured by the edges of the original image.
+*   Use StableDiffusionXLControlNet
+    
+    Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+    .
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+    
+    StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    with the `depth` method to generate variations structured by a depth map of the original image.
+*   Use ComputeText
+    
+    Compute text using a language model.
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#ComputeText)
+    
+    ComputeText( prompt="Who is Don Quixote?", temperature=0.4, max\_tokens=800, )
+    
+    Output
+    
+    { "text": "Don Quixote is a fictional character in the novel of the same name by Miguel de Cervantes." }
+    
+    to summarize the final images.
+
+First, initialize Substrate:
+
+Python
+
+TypeScript
+
+`   from substrate import (    Substrate,    StableDiffusionXLControlNet,    StableDiffusionXLInpaint,    ComputeText,    ComputeText,    sb,    )        s = Substrate(api_key=YOUR_API_KEY)            `
+
+Here's the original image:
+
+![original](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Foffice.jpg&w=1200&q=75)
+
+We'll first generate variations of the room using
+
+StableDiffusionXLInpaint
+
+Edit an image using [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
+. Supports inpainting (edit part of the image with a mask) and image-to-image (edit the full image).
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLInpaint)
+
+StableDiffusionXLInpaint( image\_uri="https://media.substrate.run/docs-klimt-park.jpg", mask\_image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="large tropical colorful bright birds in a jungle, high resolution oil painting", negative\_prompt="dark, cartoon, anime", strength=0.8, num\_images=2, store="hosted", seeds=\[ 1607280, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607326 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+.
+
+*   This node can also be used to inpaint the masked part of an image if a `mask_image_uri` is provided. Here we'll inpaint in the entire image.
+*   The `strength` parameter controls the strength of the generation process over the original image – higher numbers result in images further from the original.
+
+Python
+
+TypeScript
+
+`   styles = ["sunlit onsen style tokyo office", "80s disco style berlin office at night"]    images = [    StableDiffusionXLInpaint(    image_uri="https://media.substrate.run/office.jpg",    strength=0.75,    prompt=s,    num_images=1,    )    for s in styles    ]    res = s.run(*images)            `
+
+![inpaint tokyo](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Finpaint-tokyo.jpg&w=1200&q=75)
+
+sunlit onsen style tokyo office
+
+![inpaint berlin](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Finpaint-berlin.jpg&w=1200&q=75)
+
+80s disco style berlin office at night
+
+When using this `strength` value, some of the quality of the original is preserved in the variations, but they're quite different.
+
+֍
+
+InpaintImage
+
+Edit an image using image generation inside part of the image or the full image.
+
+Example
+
+[API Reference](https://substrate.run/nodes#InpaintImage)
+
+InpaintImage( image\_uri="https://media.substrate.run/docs-klimt-park.jpg", mask\_image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="large tropical colorful bright anime birds in a dark jungle full of vines, high resolution", store="hosted", )
+
+Output
+
+{ "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+
+is a high-level alternative to `StableDiffusionXLControlNet`. You should use high-level nodes if you want your node to automatically update to the latest, best model.
+
+Next, we'll generate variations using
+
+StableDiffusionXLControlNet
+
+Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+.
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+
+StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+with the `edge` method, which processes the original image with an edge detection algorithm and uses edges to structure generation.
+
+Python
+
+TypeScript
+
+`   styles = ["sunlit onsen style tokyo office", "80s disco style berlin office at night"]    images = [    StableDiffusionXLControlNet(    image_uri="https://media.substrate.run/office.jpg",    control_method="edge",    prompt=s,    num_images=1,    )    for s in styles    ]    res = s.run(*images)            `
+
+![edge tokyo](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fedge-tokyo.jpg&w=1200&q=75)
+
+sunlit onsen style tokyo office
+
+![edge berlin](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fedge-berlin.jpg&w=1200&q=75)
+
+80s disco style berlin office at night
+
+Finally, we'll use
+
+StableDiffusionXLControlNet
+
+Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+.
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+
+StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+with the `depth` method, which processes the original image with a depth detection algorithm and uses depth to structure generation. We'll continue our workflow to describe the generated variations using ComputeText
+
+Compute text using a language model.
+
+Example
+
+[API Reference](https://substrate.run/nodes#ComputeText)
+
+ComputeText( prompt="Who is Don Quixote?", temperature=0.4, max\_tokens=800, )
+
+Output
+
+{ "text": "Don Quixote is a fictional character in the novel of the same name by Miguel de Cervantes." }
+
+, and then summarize the generated descriptions using ComputeText
+
+Compute text using a language model.
+
+Example
+
+[API Reference](https://substrate.run/nodes#ComputeText)
+
+ComputeText( prompt="Who is Don Quixote?", temperature=0.4, max\_tokens=800, )
+
+Output
+
+{ "text": "Don Quixote is a fictional character in the novel of the same name by Miguel de Cervantes." }
+
+.
+
+Python
+
+TypeScript
+
+`   styles = ["sunlit onsen style tokyo office", "80s disco style berlin office at night"]    images = [    StableDiffusionXLControlNet(    image_uri="https://media.substrate.run/office.jpg",    control_method="depth",    prompt=s,    num_images=1,    )    for s in styles    ]    descriptions = [    ComputeText(    prompt="Describe the interesting interior decor touches in this image",    image_uris=[i.future.outputs[0].image_uri],    )    for i in images    ]    summaries = [    ComputeText(    prompt=sb.concat(    "Summarize the 2 most interesting details in one sentence, be concise: ",    d.future.text,    ),    )    for d in descriptions    ]    res = s.run(*summaries)            `
+
+![edge tokyo](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fdepth-tokyo.jpg&w=1200&q=75)
+
+The living room boasts a spacious design with a large window allowing natural light and a cozy couch. Unique is the open-concept office area, separated by a partial wall, offering a functional workspace while maintaining unity, enhanced by plants, lamps, and a rug in the modern, minimalist decor.
+
+![edge berlin](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fdepth-berlin.jpg&w=1200&q=75)
+
+The image features a contemporary office with a captivating pink and purple color scheme: vibrant pink walls instill energy, while elegant purple furniture adds sophistication.
+
+[Extract and summarize Hacker News comments](/guides/extract-and-summarize "Extract and summarize Hacker News comments")
+[Transcribe audio & video](/guides/transcription "Transcribe audio & video")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Transcribe audio & video
+
+֍
+
+Learn how to transcribe audio and video
+
+The
+
+TranscribeSpeech
+
+Transcribe speech in an audio or video file.
+
+Example
+
+[API Reference](https://substrate.run/nodes#TranscribeSpeech)
+
+TranscribeSpeech( audio\_uri="https://media.substrate.run/dfw-clip.m4a", prompt="David Foster Wallace interviewed about US culture, and Infinite Jest", segment=True, align=True, diarize=True, suggest\_chapters=True, )
+
+Output
+
+{ "text": "language like that, the wounded inner child, the inner pain, is part of a kind of pop psychological movement in the United States that is a sort of popular Freudianism that ...", "segments": \[ { "start": 0.874, "end": 15.353, "speaker": "SPEAKER\_00", "text": "language like that, the wounded inner child, the inner pain, is part of a kind of pop psychological movement in the United States that is a sort of popular Freudianism that", "words": \[ { "word": "language", "start": 0.874, "end": 1.275, "speaker": "SPEAKER\_00" }, { "word": "like", "start": 1.295, "end": 1.455, "speaker": "SPEAKER\_00" } \] } \], "chapters": \[ { "title": "Introduction to the Wounded Inner Child and Popular Psychology in US", "start": 0.794 }, { "title": "The Paradox of Popular Psychology and Anger in America", "start": 16.186 } \] }
+
+node transcribes speech from audio or video input, with additional built-in capabilities:
+
+*   segmentation by sentence
+*   diarization (speaker identification)
+*   alignment to word-level timestamps
+*   automatic chapter detection
+
+To simply transcribe input without further processing, provide an `audio_uri`. This can be a publicly-hosted audio or video file, base-64-encoded audio or video data, or a privately-hosted [external file (opens in a new tab)](http://localhost:3000/reference/external-files)
+. For best results, you may also provide a `prompt` that describes the content of the audio or video.
+
+Python
+
+TypeScript
+
+`   from substrate import Substrate, TranscribeSpeech        # ...        transcript = TranscribeSpeech(    audio_uri="https://media.substrate.run/dfw-clip.m4a",    prompt="David Foster Wallace interviewed about US culture",    )    res = substrate.run(transcript)            `
+
+Output
+
+`   {    "text": "language like that, the wounded inner child, the inner pain, is part of a kind of pop psychological movement in the United States that is a sort of popular Freudianism that ..."    }            `
+
+To enable additional capabilities, set:
+
+*   `segment: True` to return a list of sentence `segments` with `start` and `end` timestamps.
+*   `align: True` to return a list of aligned `words` within sentence `segments`.
+*   `diarize: True` to include `speaker` IDs within `segments` and `words`.
+*   `suggest_chapters: True` to return a list of suggested `chapters` with titles and `start` timestamps.
+
+Python
+
+TypeScript
+
+`   transcript = TranscribeSpeech(    audio_uri="https://media.substrate.run/dfw-clip.m4a",    prompt="David Foster Wallace interviewed about US culture",    segment=True,    align=True,    diarize=True,    suggest_chapters=True,    )            `
+
+Output
+
+`   {    "text": "language like that, the wounded inner child, the inner pain, is part of a kind of pop psychological movement in the United States that is a sort of popular Freudianism that ...",    "segments": [    {    "start": 0.874,    "end": 15.353,    "speaker": "SPEAKER_00",    "text": "language like that, the wounded inner child, the inner pain, is part of a kind of pop psychological movement in the United States that is a sort of popular Freudianism that",    "words": [    {    "word": "language",    "start": 0.874,    "end": 1.275,    "speaker": "SPEAKER_00"    },    {    "word": "like",    "start": 1.295,    "end": 1.455,    "speaker": "SPEAKER_00"    }    ]    }    ],    "chapters": [    {    "title": "Introduction to the Wounded Inner Child and Popular Psychology in US",    "start": 0.794    },    {    "title": "The Paradox of Popular Psychology and Anger in America",    "start": 16.186    }    ]    }            `
+
+[Reimagine a room](/guides/reimagine-a-room "Reimagine a room")
+[Store & query vectors](/guides/vector-stores "Store & query vectors")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Store & query vectors
+
+֍
+
+Learn how to store vectors and query a vector store
+
+Substrate comes with built-in vector storage, which you can use to store and query generated embeddings. In this example, we'll embed a set of common phrases used to enhance image generation prompts. Then, we'll query the vector store with a given prompt to recommend phrases to enhance the prompt.
+
+First, we'll create a new vector store using
+
+FindOrCreateVectorStore
+
+Find a vector store matching the given collection name, or create a new vector store.
+
+Example
+
+[API Reference](https://substrate.run/nodes#FindOrCreateVectorStore)
+
+FindOrCreateVectorStore( collection\_name="smoke\_tests", model="jina-v2", )
+
+Output
+
+{ "collection\_name": "smoke\_tests", "model": "jina-v2" }
+
+, providing a name for the collection, and the model we'll use to embed our data.
+
+Python
+
+TypeScript
+
+`   create = FindOrCreateVectorStore(    collection_name="image_prompt_enhancements",    model="jina-v2",    );    create_res = substrate.run(create)            `
+
+Next, we'll embed the enhancement phrases using
+
+EmbedText
+
+Generate embedding for a text document.
+
+Example
+
+[API Reference](https://substrate.run/nodes#EmbedText)
+
+EmbedText( text="Argon is the third most abundant gas in Earth's atmosphere, at 0.934% (9340 ppmv). It is more than twice as abundant as water vapor.", model="jina-v2", collection\_name="smoke\_tests", metadata={ "group": "18", }, embedded\_metadata\_keys=\[ "group", \], )
+
+Output
+
+{ "embedding": { "vector": \[ -0.035030052065849304, -0.04128379374742508, 0.05782046541571617 \], "doc\_id": "c9de81fb98804ce0afb2b8ac17c0799b", "metadata": { "group": "18", "doc\_id": "c9de81fb98804ce0afb2b8ac17c0799b", "doc": "group: 18 Argon is the third most abundant gas in Earth's atmosphere, at 0.934% (9340 ppmv). It is more than twice as abundant as water vapor." } } }
+
+providing the text to embed, the name of the collection, and the embedding model. We'll create an array of embedding nodes, and Substrate will automatically run the nodes in parallel.
+
+Python
+
+TypeScript
+
+`   enhancements = [    "highly detailed",    "cell shaded cartoon",    "concept art",    "octane render",    "volumetric lighting",    "8k postprocessing",    "cinematic",    "sharp focus",    ]    nodes = []    for e in enhancements:    embed = EmbedText(    text=e,    collection_name="image_prompt_enhancements",    model="jina-v2",    )    nodes.append(embed)    embed_res = substrate.run(*nodes)            `
+
+Finally, we'll query the vector store with a given prompt using
+
+QueryVectorStore
+
+Query a vector store for similar vectors.
+
+Example
+
+[API Reference](https://substrate.run/nodes#QueryVectorStore)
+
+QueryVectorStore( collection\_name="smoke\_tests", model="jina-v2", query\_strings=\[ "gas", "metal", \], top\_k=1, include\_metadata=True, )
+
+Output
+
+{ "results": \[ \[ { "id": "483e75021c9d4ad69c3d78ace76da2ea", "distance": -0.78324556350708, "metadata": { "doc": "group: 18 Argon is the third most abundant gas in Earth's atmosphere, at 0.934% (9340 ppmv). It is more than twice as abundant as water vapor.", "group": "18", "doc\_id": "483e75021c9d4ad69c3d78ace76da2ea" } } \], \[ { "id": "dd8f3774e05d42caa53cfbaa7389c08f", "distance": -0.74278724193573, "metadata": { "doc": "group: 8 Osmium is the densest naturally occurring element. When experimentally measured using X-ray crystallography, it has a density of 22.59 g/cm3. Manufacturers use its alloys with platinum, iridium, and other platinum-group metals to make fountain pen nib tipping, electrical contacts, and in other applications that require extreme durability and hardness.", "group": "8", "doc\_id": "dd8f3774e05d42caa53cfbaa7389c08f" } } \] \], "collection\_name": "comments", "model": "jina-v2" }
+
+, providing the query string, the collection name, and the embedding model.
+
+*   We'll set `include_metadata` to `True` to include metadata in the response, as the metadata includes the embedded text in the `doc` field.
+*   We'll set `top_k` to 3 to retrieve only the top 3 most similar results.
+
+Python
+
+TypeScript
+
+`   query = QueryVectorStore(    query_strings=["a towering shell the size of a city skyscraper"],    collection_name="image_prompt_enhancements",    model="jina-v2",    include_metadata=True,    top_k=3,    )    query_res = substrate.run(query)    query_out = query_res.get(query)            `
+
+The output of
+
+QueryVectorStore
+
+Query a vector store for similar vectors.
+
+Example
+
+[API Reference](https://substrate.run/nodes#QueryVectorStore)
+
+QueryVectorStore( collection\_name="smoke\_tests", model="jina-v2", query\_strings=\[ "gas", "metal", \], top\_k=1, include\_metadata=True, )
+
+Output
+
+{ "results": \[ \[ { "id": "483e75021c9d4ad69c3d78ace76da2ea", "distance": -0.78324556350708, "metadata": { "doc": "group: 18 Argon is the third most abundant gas in Earth's atmosphere, at 0.934% (9340 ppmv). It is more than twice as abundant as water vapor.", "group": "18", "doc\_id": "483e75021c9d4ad69c3d78ace76da2ea" } } \], \[ { "id": "dd8f3774e05d42caa53cfbaa7389c08f", "distance": -0.74278724193573, "metadata": { "doc": "group: 8 Osmium is the densest naturally occurring element. When experimentally measured using X-ray crystallography, it has a density of 22.59 g/cm3. Manufacturers use its alloys with platinum, iridium, and other platinum-group metals to make fountain pen nib tipping, electrical contacts, and in other applications that require extreme durability and hardness.", "group": "8", "doc\_id": "dd8f3774e05d42caa53cfbaa7389c08f" } } \] \], "collection\_name": "comments", "model": "jina-v2" }
+
+has query results in the `results` field, which is a _list of lists_. In this example, it contains a single list of results. If we instead provided two `query_strings`, it would contain two lists of results, one for each query string.
+
+Output
+
+`   {    "results": [    [    {    "id": "079ee5765c8c4df98b50bdb7b5cbdd29",    "distance": -0.723642945289612,    "vector": null,    "metadata": {    "doc": "cell shaded cartoon",    "doc_id": "079ee5765c8c4df98b50bdb7b5cbdd29"    }    },    {    "id": "98ec8bb1da1243d88721645fc0a8899b",    "distance": -0.717301785945892,    "vector": null,    "metadata": {    "doc": "cinematic",    "doc_id": "98ec8bb1da1243d88721645fc0a8899b"    }    },    {    "id": "158f2fc695e648878d245fdf93fa2917",    "distance": -0.715586066246033,    "vector": null,    "metadata": {    "doc": "wide shot",    "doc_id": "158f2fc695e648878d245fdf93fa2917"    }    }    ]    ],    "collection_name": null,    "model": "jina-v2",    "metric": "inner"    }            `
+
+[Transcribe audio & video](/guides/transcription "Transcribe audio & video")
+[Separate foreground & background](/guides/remove-background "Separate foreground & background")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Separate foreground & background
+
+֍
+
+Generate an image, remove the background, and fill the foreground
+
+In this example, we'll create a branching image generation workflow that:
+
+*   Generates an image using GenerateImage
+    
+    Generate an image.
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#GenerateImage)
+    
+    GenerateImage( prompt="hokusai futuristic supercell spiral cloud with glowing core over turbulent ocean", store="hosted", )
+    
+    Output
+    
+    { "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+    
+*   Removes the background from the image using RemoveBackground
+    
+    Remove the background from an image and return the foreground segment as a cut-out or a mask.
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#RemoveBackground)
+    
+    RemoveBackground( image\_uri="https://media.substrate.run/apple-forest.jpeg", store="hosted", )
+    
+    Output
+    
+    { "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+    
+*   Generates a masked foreground from the image using RemoveBackground
+    
+    Remove the background from an image and return the foreground segment as a cut-out or a mask.
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#RemoveBackground)
+    
+    RemoveBackground( image\_uri="https://media.substrate.run/apple-forest.jpeg", store="hosted", )
+    
+    Output
+    
+    { "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+    
+    , with `return_mask` enabled
+*   Fills the masked foreground using EraseImage
+    
+    Erase the masked part of an image, e.g. to remove an object by inpainting.
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#EraseImage)
+    
+    EraseImage( image\_uri="https://media.substrate.run/apple-forest.jpeg", mask\_image\_uri="https://media.substrate.run/apple-forest-mask.jpeg", store="hosted", )
+    
+    Output
+    
+    { "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+    
+
+First, initialize Substrate:
+
+Python
+
+TypeScript
+
+`   from substrate import (    Substrate,    GenerateImage,    RemoveBackground,    EraseImage,    sb,    )        s = Substrate(api_key=YOUR_API_KEY)            `
+
+Create and connect four nodes and run them:
+
+Python
+
+TypeScript
+
+`   image = GenerateImage(    prompt="a dark red chesterfield leather wing chair in a dark majestic room, pillars, celestial galaxy wallpaper",    )    bg = RemoveBackground(image_uri=image.future.image_uri)    mask = RemoveBackground(    image_uri=image.future.image_uri,    return_mask=True,    )    erase = EraseImage(    image_uri=image.future.image_uri,    mask_image_uri=mask.future.image_uri,    )    res = s.run(erase)            `
+
+[Run this example](https://explore.substrate.run/s/eNrNlFtv0zAUx7-KZfUxSIOu3dY3JsYugNq1Qkyg6ci1T1MTJ7ZO7HZdle8-OxQWxJAoAmlvORfbv_-5ZMsrq7Dmoy9brhUftWZ_cAJh8GKtr9DwrHXFyDlWSMLjZSlyjG5BeTy35Y5s6XxMEEwJKhihYnKJtUdaaDSKGRR-icTWuspjRGhiumK77FJ8jalaMrK2zJhEk0xhWC6MuNuwtTDGCYfEm4xDvbTBKLDBu-AhN3Yewxs-8hSwyboShgeA80_mbnwYHiVMsbQrPBWyyMmGSnVU6KQKAulkAPR6s1M4n76eXMB4Apdvej2AeMEi-EA4PO6DLQ8-3xzdLHmzJ9dL6A834zMnV_-BawDXi3B9EWarVC7C6K2gFHXxHWUv1FcQPpjJu0Vx-Ih6RqL-ZQT2gzwCdz-HcgbTBJnoYL8LTkC9nVwd3398_wfVv8125zpD_kQbM640ofR6hYnBb1xS60nIJNSSznUFqQbwuzWxDmofW9g-8-2FNrcKxmS8wAjUKVQsnpRY15bS5ngf5_u2-VH_J_r5PAE7vXyegJ1Z-RvAn9f1XwDGeUSVt9MYP3Wl098OdpvUNA9WSOZW)
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fchesterfield.jpeg&w=640&q=75)
+
+`res.get(image)`
+
+![no background](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fchesterfield-no-bg.jpeg&w=640&q=75)
+
+`res.get(removeBg)`
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fchesterfield-mask.jpeg&w=640&q=75)
+
+`res.get(removeBgMask)`
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fchesterfield-only-bg.jpeg&w=640&q=75)
+
+`res.get(fillMask)`
+
+[Store & query vectors](/guides/vector-stores "Store & query vectors")
+[Masked image generation](/guides/masked-image-generation "Masked image generation")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+On This Page
+
+*   [1\. Generate illusions](#1-generate-illusions)
+    
+*   [2\. Generate a variation and inpaint](#2-generate-a-variation-and-inpaint)
+    
+
+Guides
+
+Masked image generation
+
+֍
+
+Use a mask to generate images
+
+In this example, we'll generate a mask from a logo image with
+
+RemoveBackground
+
+Remove the background from an image and return the foreground segment as a cut-out or a mask.
+
+Example
+
+[API Reference](https://substrate.run/nodes#RemoveBackground)
+
+RemoveBackground( image\_uri="https://media.substrate.run/apple-forest.jpeg", store="hosted", )
+
+Output
+
+{ "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+
+, and use that mask to generate variations of the image using two workflows:
+
+1.  Using StableDiffusionXLControlNet
+    
+    Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+    .
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+    
+    StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    with the `illusion` method to generate illusions incorporating the mask.
+2.  Using StableDiffusionXLControlNet
+    
+    Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+    .
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+    
+    StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    with the `edge` method followed by StableDiffusionXLInpaint
+    
+    Edit an image using [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
+    . Supports inpainting (edit part of the image with a mask) and image-to-image (edit the full image).
+    
+    Example
+    
+    [API Reference](https://substrate.run/nodes#StableDiffusionXLInpaint)
+    
+    StableDiffusionXLInpaint( image\_uri="https://media.substrate.run/docs-klimt-park.jpg", mask\_image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="large tropical colorful bright birds in a jungle, high resolution oil painting", negative\_prompt="dark, cartoon, anime", strength=0.8, num\_images=2, store="hosted", seeds=\[ 1607280, 1720395, \], )
+    
+    Output
+    
+    { "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607326 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+    
+    to fill a mask with content and then generate inside the mask.
+
+First, initialize Substrate:
+
+Python
+
+TypeScript
+
+`   from substrate import (    Substrate,    RemoveBackground,    StableDiffusionXLControlNet,    StableDiffusionXLInpaint,    )        s = Substrate(api_key=YOUR_API_KEY)            `
+
+Here's the original image:
+
+![original](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Flogo-sq.png&w=640&q=75)
+
+### 1\. Generate illusions[](#1-generate-illusions)
+
+This workflow uses
+
+RemoveBackground
+
+Remove the background from an image and return the foreground segment as a cut-out or a mask.
+
+Example
+
+[API Reference](https://substrate.run/nodes#RemoveBackground)
+
+RemoveBackground( image\_uri="https://media.substrate.run/apple-forest.jpeg", store="hosted", )
+
+Output
+
+{ "image\_uri": "https://assets.substrate.run/84848484.jpg" }
+
+to generate a mask, followed by StableDiffusionXLControlNet
+
+Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+.
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+
+StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+with the `illusion` method to generate a two images incorporating the mask into a view of the ocean from above:
+
+Python
+
+TypeScript
+
+`   mask = RemoveBackground(image_uri="https://media.substrate.run/logo-sq.png", return_mask=True)    controlnet = StableDiffusionXLControlNet(    image_uri=mask.future.image_uri,    control_method="illusion",    conditioning_scale=1,    prompt="sunlit bright birds-eye view of the ocean, turbulent choppy waves",    num_images=2,    )    res = s.run(controlnet)            `
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fillusion-1.jpg&w=640&q=75)
+
+![no background](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fillusion-2.jpg&w=640&q=75)
+
+Experimenting with different prompts can produce striking results:
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Flogo-atlantis-1.jpg&w=640&q=75)
+
+![no background](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Flogo-atlantis-2.jpg&w=640&q=75)
+
+### 2\. Generate a variation and inpaint[](#2-generate-a-variation-and-inpaint)
+
+This workflow uses
+
+StableDiffusionXLControlNet
+
+Generate an image with generation structured by an input image, using Stable Diffusion XL with [ControlNet](https://arxiv.org/abs/2302.05543)
+.
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLControlNet)
+
+StableDiffusionXLControlNet( image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="the futuristic solarpunk city of atlantis at sunset, cinematic bokeh HD", control\_method="illusion", conditioning\_scale=1.0, strength=1.0, store="hosted", num\_images=2, seeds=\[ 1607226, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607266 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+to generate a variation of the original, and StableDiffusionXLInpaint
+
+Edit an image using [Stable Diffusion XL](https://arxiv.org/abs/2307.01952)
+. Supports inpainting (edit part of the image with a mask) and image-to-image (edit the full image).
+
+Example
+
+[API Reference](https://substrate.run/nodes#StableDiffusionXLInpaint)
+
+StableDiffusionXLInpaint( image\_uri="https://media.substrate.run/docs-klimt-park.jpg", mask\_image\_uri="https://media.substrate.run/spiral-logo.jpeg", prompt="large tropical colorful bright birds in a jungle, high resolution oil painting", negative\_prompt="dark, cartoon, anime", strength=0.8, num\_images=2, store="hosted", seeds=\[ 1607280, 1720395, \], )
+
+Output
+
+{ "outputs": \[ { "image\_uri": "https://assets.substrate.run/84848484.jpg", "seed": 1607326 }, { "image\_uri": "https://assets.substrate.run/48484848.jpg", "seed": 1720398 } \] }
+
+to generate a variation inpainting inside a mask.
+
+Python
+
+TypeScript
+
+`   original = "https://media.substrate.run/logo-nopad-bg-white.png"    controlnet = StableDiffusionXLControlNet(    image_uri=original,    control_method="depth",    prompt="silver disco ball, 4k",    conditioning_scale=0.8,    num_images=1,    )    inpaint = StableDiffusionXLInpaint(    image_uri=controlnet.future.outputs[0].image_uri,    mask_image_uri=mask.future.image_uri,    prompt="towers in the futuristic ancient solarpunk city of atlantis",    num_images=1,    )    res = s.run(inpaint)            `
+
+![image](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fex-controlnet.jpeg&w=640&q=75)
+
+`res.get(controlnet)`
+
+![no background](https://docs.substrate.run/_next/image?url=https%3A%2F%2Fmedia.substrate.run%2Fex-cn-inpaint.webp&w=640&q=75)
+
+`res.get(inpaint)`
+
+[Separate foreground & background](/guides/remove-background "Separate foreground & background")
+[Mixture of Agents](/guides/mixture-of-agents "Mixture of Agents")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)[](https://substrate.run)
+
+[Docs](/)
+
+[Nodes](https://substrate.run/nodes)
+
+[Pricing](https://substrate.run/pricing)
+
+[Company](https://substrate.run/company)
+
+[Blog](https://blog.substrate.run)
+
+...
+
+CTRL K
+
+CTRL K
+
+*   [Introduction](/)
+    
+*   Overview
+    
+    *   [Get started](/overview/setup)
+        
+    *   [Connect nodes](/overview/connecting)
+        
+    *   [Store outputs](/overview/storing)
+        
+    
+*   [Why Substrate?](/why)
+    
+*   [Changelog](/changelog)
+    
+*   Guides
+    
+    *   [Extract and summarize Hacker News comments](/guides/extract-and-summarize)
+        
+    *   [Reimagine a room](/guides/reimagine-a-room)
+        
+    *   [Transcribe audio & video](/guides/transcription)
+        
+    *   [Store & query vectors](/guides/vector-stores)
+        
+    *   [Separate foreground & background](/guides/remove-background)
+        
+    *   [Masked image generation](/guides/masked-image-generation)
+        
+    *   [Mixture of Agents](/guides/mixture-of-agents)
+        
+    
+*   Reference
+    
+    *   [API design](/reference/api)
+        
+    *   [Quick reference](/reference/quick)
+        
+    *   [Box](/reference/box)
+        
+    *   [If](/reference/if)
+        
+    *   [RunPython](/reference/run-python)
+        
+    *   [Streaming](/reference/streaming)
+        
+    *   [External files](/reference/external-files)
+        
+        *   [Amazon S3](/reference/external-files/s3)
+            
+        
+    *   [Versioning](/reference/versioning)
+        
+    *   Legal
+        
+        *   [Terms of Service](/reference/legal/terms-of-service)
+            
+        *   [Privacy Policy](/reference/legal/privacy-policy)
+            
+        *   [Usage Policy](/reference/legal/usage-policy)
+            
+        
+    
+
+Guides
+
+Mixture of Agents
+
+֍
+
+Learn how to implement Mixture of Agents
+
+Language models can perform better on tasks when given the opportunity to reflect on a proposed response. "Mixture of Agents" is a pattern (coined [by Together AI (opens in a new tab)](https://www.together.ai/blog/together-moa)
+) in which multiple different LLMs propose responses, and subsequent LLM steps evaluate and synthesize those responses into a single improved response.
+
+`propose`
+
+ComputeText
+
+`propose`
+
+ComputeText
+
+`propose`
+
+ComputeText
+
+`evaluate`
+
+ComputeText
+
+`summarize`
+
+ComputeText
+
+Press enter or space to select a node.You can then use the arrow keys to move the node around. Press delete to remove it and escape to cancel.
+
+Press enter or space to select an edge. You can then press delete to remove it or escape to cancel.
+
+This pattern is simple to implement with Substrate, automatically parallelized, and easy to extend.
+
+TypeScript
+
+Python
+
+``   const substrate = new Substrate({ apiKey: SUBSTRATE_API_KEY });        const prompt = "write me a summary of don quixote";    const mist = new ComputeText({ prompt: prompt, model: "Mistral7BInstruct" });    const llama = new ComputeText({ prompt: prompt, model: "Llama3Instruct8B" });    const mixt = new ComputeText({ prompt: prompt, model: "Mixtral8x7BInstruct" });    const reasoning = new ComputeText({    prompt: sb.interpolate`Reason about the strengths and weaknesses of each response. Explain which elements from each response are superior.    PROMPT: ${prompt}    CANDIDATE RESPONSES:    1) ${mist.future.text}    2) ${llama.future.text}    3) ${mixt.future.text}`,    });    const answer = new ComputeText({    prompt: sb.interpolate`Come up with one detailed, comprehensive, unified response using the best parts of the candidate responses, based on the evaluation. Return only the response, do not reveal the process (do not say candidate response or evaluation).    PROMPT: ${prompt}    CANDIDATE RESPONSES:    1) ${mist.future.text}    2) ${llama.future.text}    3) ${mixt.future.text}    EVALUATION: ${reasoning.future.text}`,    });        const res = await substrate.run(answer);    console.log(res.get(answer).text);            ``
+
+[Masked image generation](/guides/masked-image-generation "Masked image generation")
+[API design](/reference/api "API design")
+
+[© 2023-2024 Substrate Labs Inc.](https://substrate.run)
+
+[Twitter](https://x.com/substratelabs)
+
+[LinkedIn](https://www.linkedin.com/company/substratelabs)
+
+[Slack Community](https://join.slack.com/t/substratecommunity/shared_invite/zt-2jd8w6b7n-b0qE5QWV7rsClGglHeu_rA)
