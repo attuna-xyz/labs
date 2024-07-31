@@ -5,10 +5,14 @@ import requests
 import logging
 from github import Github
 from github import GithubException
-
+from config import *
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+def read_private_key(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
 
 def create_jwt(app_id, private_key):
     now = int(time.time())
@@ -36,11 +40,18 @@ def create_pull_request(installation_id, repo_name, branch_name, file_path, comm
 
     # Load GitHub App credentials
     app_id = os.environ.get('GITHUB_APP_ID')
-    private_key = os.environ.get('GITHUB_PRIVATE_KEY')
-
-    if not app_id or not private_key:
+    private_key_path = os.environ.get('GITHUB_PRIVATE_KEY_PATH')
+    print("private_key_path", private_key_path)
+    if not app_id :
         logger.error("GitHub App credentials not found in environment variables")
         raise ValueError("GitHub App credentials not found")
+    if not private_key_path:
+        logger.error("Private key path not found in environment variables")
+        raise ValueError("Private key path not found")
+
+
+    private_key = read_private_key(private_key_path)
+    logger.info("Private key read successfully")
 
     # Create JWT
     jwt_token = create_jwt(app_id, private_key)
@@ -110,14 +121,14 @@ def create_pull_request(installation_id, repo_name, branch_name, file_path, comm
         logger.error(f"Unexpected error: {str(e)}")
         raise
 
-if __name__ == "__main__":
+def develyn_raise_pr():
     installation_id = os.environ.get('GITHUB_INSTALLATION_ID')# Replace with your GitHub App's installation ID
     repo_name = "attuna-xyz/prompt-learner"
-    branch_name = "add-new-guide"
-    file_path = "new_guide.ipynb"
+    branch_name = BRANCH_NAME
+    file_path = OUTPUT_FILE
     commit_message = "Add new guide in a notebook format"
     pr_title = "New Notebook Guide for Extreme Classification"
     pr_body = "This PR adds a new Extreme Classification Demo to the project."
 
     pr_number = create_pull_request(installation_id, repo_name, branch_name, file_path, commit_message, pr_title, pr_body)
-    print(f"Pull request created successfully. PR number: {pr_number}")
+    return f"Pull request created successfully. PR number: {pr_number}"

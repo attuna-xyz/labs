@@ -17,8 +17,8 @@ Examples."""
 PRE_GENERATION_PROMPT = """
 Using this, help the team generate a new guide to add to cookbook that uses {project} for {task}.
 Give me code in python with good inline comments.
-Make it a juoyter notebook with separated cells for each step.
+Make it a python script with separated statements for each step.
 I should be able to execute your code directly.
 Do not give anything extra. Just the code that is needed to complete the guide.
-I will upload the output as a .ipynb file to the repository.
+I will upload the output as a .py file to the repository.
 """

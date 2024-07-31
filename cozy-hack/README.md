@@ -25,3 +25,9 @@ observations
 [] code generation specific models- codellama just space
 [] mistral good/ hallucincates though
 [] gpt 4o mini just works
+
+
+#can ask agent to execute the code
+#can send errors back to llm until code executes end to end
+#can ask agent to upload a commit to github with the new guide
+#can finally ask devrel/eng to review the guide and merge the PR
