@@ -48,7 +48,7 @@ Edit the `config.py` file to customize:
 
 Run the main script:
 ```
-python main.py
+python develyn-cook.py
 ```
 
 This will:
