@@ -1,0 +1,7 @@
+.env
+.ipynb_checkpoints
+.langgraph-data
+#ignore folder my_env
+my_env
+#ignore folder __pycache__
+__pycache__
