@@ -15,7 +15,12 @@ class CodeGeneration(BaseModel):
     code: str = Field(description="Code block not including import statements")
     description = "Schema for code solutions to questions."
 
+class CanDo(BaseModel):
+    """Code output"""
 
+    possible: bool = Field(description="Can this use case be performed using the library?")
+    reason: str = Field(description="Why or why not?")
+    description = "Schema for can the library perform the use case or not responses."
 
 class GraphState(TypedDict):
     """
@@ -26,9 +31,11 @@ class GraphState(TypedDict):
         messages : With user question, error messages, reasoning
         generation : Code solution
         iterations : Number of tries
+        is_possible : Can the library perform the use case or not
     """
     
     error: str
     messages: List
     generation: str
     iterations: int
+    is_possible: bool

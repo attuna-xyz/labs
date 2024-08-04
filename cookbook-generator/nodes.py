@@ -130,3 +130,38 @@ def reflect(state: GraphState):
     )
     messages += [("assistant", f"Here are reflections on the error: {reflections}")]
     return {"generation": code_solution, "messages": messages, "iterations": iterations}
+
+def answer_can_do(state: GraphState):
+    """
+    Answer can do
+
+    Args:
+        state (dict): The current graph state
+
+    Returns:
+        state (dict): New key added to state, can_do
+    """
+
+    print("---ANSWERING CAN DO QUESTIONS---")
+
+    # State
+    messages = state["messages"]
+    is_possible = state["is_possible"]
+    if is_possible is True:
+        messages += [("user", "Yes, the library can do that! Call the code generation tool to generate a solution.")]
+        return {"is_possible": is_possible, "messages": messages}
+    elif is_possible is False:
+        messages += [("user", "No, the library cannot do that. End the chain")]
+        return {"is_possible": is_possible, "messages": messages}
+    else:
+        # Solution
+        can_do = globals.can_do_chain.invoke(
+            {"docs": globals.docs, "company": COMPANY ,"project": PROJECT, "messages": messages}
+        )
+        messages += [
+            (
+                "assistant",
+                f"Can do: {can_do.possible} \n Reason: {can_do.reason}",
+            )
+        ]
+        return {"is_possible": can_do.possible, "messages": messages}
