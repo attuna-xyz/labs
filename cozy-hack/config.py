@@ -1,22 +1,18 @@
 
 # Project Information
-COMPANY = "Attuna"
-PROJECT = "Prompt Learner"
+COMPANY = "Julep AI"
+PROJECT = "Julep"
 PROJECT_DESCRIPTION = """
-Prompt Learner is designed to make prompts modular. This enables easy tuning, quick experimentation, 
-and frictionless maintenance. A prompt is composed of distinct modules where each module can be 
-optimized & modified both on its own, and as a part of the complete system. Some modules are - 
-The task type The task description A few examples Custom Prompt Technique specific Instructions 
-Instructions for output format.
+Julep is a platform for developing stateful and functional LLM-powered applications.
+Why Julep?
+We've built a lot of AI apps and understand how difficult it is to evaluate hundreds of tools, techniques, and models, and then make them work well together.
+The Problems
+The barrier to making LLM apps with memory, knowledge & tools is too high.
+Agentic behavior is hard to control when done through multi-agent frameworks.
 """
 
 # Document URLs
-DOCUMENT_URLS = [
-    "https://raw.githubusercontent.com/attuna-xyz/prompt-learner/main/cookbook/anthropic_demo.py",
-    "https://raw.githubusercontent.com/attuna-xyz/prompt-learner/main/cookbook/classification_demo.py",
-    "https://raw.githubusercontent.com/attuna-xyz/prompt-learner/main/cookbook/grid_search_demo.py",
-    "https://raw.githubusercontent.com/attuna-xyz/prompt-learner/main/cookbook/optimize_classifier.py",
-]
+URL = "https://docs.julep.ai/guides/quickstart"
 
 # Agent Configuration
 AGENT_NAME = "Develyn"
@@ -25,9 +21,7 @@ AGENT_SITUATION = "You are Develyn. You are an expert Developer Relations Engine
 
 # Task Configuration
 TASK = """
-Use Prompt Learner to engineer prompts for an interesting extreme classification task which is a 
-multi-label classification task with a large number of classes and is related to developers, maybe 
-tagging incoming github issues into different categories.
+Use Julep to create an agent to talk in old english.
 """
 
 # File Configuration
