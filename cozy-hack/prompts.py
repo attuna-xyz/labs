@@ -21,4 +21,5 @@ Make it a python script with separated statements for each step.
 I should be able to execute your code directly.
 Do not give anything extra. Just the code that is needed to complete the guide.
 I will upload the output as a .py file to the repository.
+Format it nicely with new lines after each statement and comments for each step.
 """

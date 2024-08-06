@@ -6,7 +6,7 @@ authors = ["Aditya Lahiri <adityalahiri13@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.10,<3.14"
 julep = "^0.3.9"
 bs4 = "^0.0.2"
 langchain-community = "^0.2.9"
@@ -17,6 +17,8 @@ pygithub = "^2.3.0"
 pyjwt = "^2.8.0"
 requests = "^2.32.3"
 jupytext = "^1.16.3"
+python-fasthtml = "^0.2.4"
+claudette = "^0.0.6"
 
 [build-system]
 requires = ["poetry-core"]
