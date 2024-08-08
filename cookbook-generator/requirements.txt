@@ -6,3 +6,4 @@ langchain_community
 langchain_openai
 langchain
 bs4
+toolhouse
