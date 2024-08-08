@@ -13,6 +13,7 @@ This is a an AI Agent that allows you to ask questions and generate code for you
 - Add logging to this using logfire or something
 - Ask agent to update state to reflect usage analytics
 - Agent also acts as a product analytics tool
+- Develyn main agent has Communication Management sub-agent, Code sub-Agent, Analytics sub-Agent.
 
 ## Done
 - Add a Can I do this Node
