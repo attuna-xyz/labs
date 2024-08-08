@@ -1,4 +1,4 @@
-from config import flag, MAX_RETRIES
+from config import MAX_RETRIES
 
 
 from state import GraphState
@@ -23,10 +23,6 @@ def decide_to_finish(state: GraphState):
         print("---DECISION: FINISH---")
         return "end"
     else:
-        print("---DECISION: RE-TRY SOLUTION---")
-        if flag == "reflect":
-            return "reflect"
-        else:
             return "generate"
         
 def can_answer(state: GraphState):

@@ -3,7 +3,7 @@ from prompts import SYSTEM_PROMPT, CAN_DO_PROMPT
 from config import * 
 from tools import decide_to_finish, can_answer
 from state import GraphState
-from nodes import generate, code_check, reflect, answer_can_do
+from nodes import generate, code_check, answer_can_do
 from utils import fetch_docs, parse_output
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
@@ -46,7 +46,6 @@ workflow = StateGraph(GraphState)
 workflow.add_node("can_do", answer_can_do)  # can do
 workflow.add_node("generate", generate)  # generation solution
 workflow.add_node("check_code", code_check)  # check code
-workflow.add_node("reflect", reflect)  # reflect
 
 # Build graph
 workflow.add_edge(START, "can_do")
@@ -64,11 +63,9 @@ workflow.add_conditional_edges(
     decide_to_finish,
     {
         "end": END,
-        "reflect": "reflect",
         "generate": "generate",
     },
 )
-workflow.add_edge("reflect", "generate")
 app = workflow.compile()
 
 #question = "How can I directly pass a string to a runnable and use it to construct the input needed for my prompt?"

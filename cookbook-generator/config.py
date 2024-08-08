@@ -14,7 +14,6 @@ Instructions for output format.
 DOCUMENT_URL = "https://python.langchain.com/v0.2/docs/concepts/#langchain-expression-language-lcel"
 # Retry Configuration
 MAX_RETRIES = 3
-flag = "do not reflect"
 
 # Agent Configuration
 AGENT_NAME = "Develyn"

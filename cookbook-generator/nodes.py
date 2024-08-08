@@ -104,33 +104,6 @@ def code_check(state: GraphState):
         "error": "no",
     }
 
-def reflect(state: GraphState):
-    """
-    Reflect on errors
-
-    Args:
-        state (dict): The current graph state
-
-    Returns:
-        state (dict): New key added to state, generation
-    """
-
-    print("---GENERATING CODE SOLUTION---")
-
-    # State
-    messages = state["messages"]
-    iterations = state["iterations"]
-    code_solution = state["generation"]
-
-    # Prompt reflection
-
-    # Add reflection
-    reflections = globals.code_gen_chain.invoke(
-        {"docs": globals.docs, "company": COMPANY ,"project": PROJECT, "messages": messages}
-    )
-    messages += [("assistant", f"Here are reflections on the error: {reflections}")]
-    return {"generation": code_solution, "messages": messages, "iterations": iterations}
-
 def answer_can_do(state: GraphState):
     """
     Answer can do
