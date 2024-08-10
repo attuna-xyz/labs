@@ -7,3 +7,5 @@ langchain_openai
 langchain
 bs4
 toolhouse
+chromadb
+langchain_together
